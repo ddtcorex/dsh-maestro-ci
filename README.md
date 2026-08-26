@@ -1,4 +1,4 @@
-# ddtcorex/.github
+# ddtcorex/dsh-maestro-ci
 
 Reusable GitHub Actions workflows for the Maestro suite. Callers live in
 each repo as a thin `.github/workflows/ci.yml`; fix or extend pipelines
@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   verify:
-    uses: ddtcorex/.github/.github/workflows/node-plugin.yml@main
+    uses: ddtcorex/dsh-maestro-ci/.github/workflows/node-plugin.yml@main
 ```
 
 Special cases:
@@ -50,7 +50,7 @@ Go CI (`govard`): setup-go via `go.mod` → `make test` → `make build`.
 ```yaml
 jobs:
   verify:
-    uses: ddtcorex/.github/.github/workflows/go-lib.yml@main
+    uses: ddtcorex/dsh-maestro-ci/.github/workflows/go-lib.yml@main
 ```
 
 ## Versioning
