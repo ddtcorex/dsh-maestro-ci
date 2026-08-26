@@ -26,6 +26,10 @@ on:
         description: Fail unless lib/index.js exists after build
         type: boolean
         default: true
+      sibling-repos:
+        description: Newline-separated "repo@ref" cloned+built under ../ before install
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -35,6 +39,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Cross-package deps use workspace:^ + a ../<pkg> workspace member, which
+      # only resolves when the sibling checkout exists beside this one.
+      - name: Checkout and build sibling repos
+        if: inputs.sibling-repos != ''
+        env:
+          SIBLINGS: ${{ inputs.sibling-repos }}
+        run: |
+          while read -r spec; do
+            [ -z "$spec" ] && continue
+            repo="${spec%%@*}"; ref="${spec##*@}"
+            git clone --depth 1 --branch "$ref" "https://github.com/ddtcorex/${repo}.git" "../${repo}"
+            (cd "../${repo}" && corepack enable && pnpm install --frozen-lockfile && pnpm build)
+          done <<< "$SIBLINGS"
 
       - uses: pnpm/action-setup@v4
         with:
