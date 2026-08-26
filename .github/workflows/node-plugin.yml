@@ -59,9 +59,15 @@ jobs:
             (cd "$dest" && corepack enable && pnpm install --frozen-lockfile && pnpm build)
           done <<< "$SIBLINGS"
 
+      # Callers whose manifest pins packageManager must NOT get an explicit
+      # version here — pass pnpm-version: "" in that case.
       - uses: pnpm/action-setup@v4
+        if: inputs.pnpm-version != ''
         with:
           version: ${{ inputs.pnpm-version }}
+
+      - uses: pnpm/action-setup@v4
+        if: inputs.pnpm-version == ''
 
       - uses: actions/setup-node@v4
         with:
