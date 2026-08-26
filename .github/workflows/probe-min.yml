@@ -1,0 +1,13 @@
+name: probe-min
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "reusable ok"
