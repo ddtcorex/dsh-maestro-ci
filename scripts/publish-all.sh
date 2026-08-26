@@ -54,8 +54,9 @@ publish_one() { # $1=key  $2="full"|"patch-only"
   name=$(python3 -c "import json;print(json.load(open('package.json'))['name'])")
   ver=$(python3 -c "import json;print(json.load(open('package.json'))['version'])")
   npm view "$name@$ver" version >/dev/null && echo "  ✓ $name@$ver on registry"
-  tarball="$WORK/$name.tgz"
   npm pack "$name@$ver" --silent --pack-destination "$WORK" >/dev/null
+  tarball=$(ls "$WORK"/*-"$ver".tgz 2>/dev/null | head -n 1)
+  if [ -z "${tarball:-}" ] || [ ! -f "$tarball" ]; then echo "  ✗ tarball not found for $name@$ver (expected *-$ver.tgz in $WORK)"; ls -l "$WORK"/*.tgz 2>/dev/null || echo "  (no tgz in $WORK)"; exit 1; fi
   if tar -xzOf "$tarball" package/package.json | grep -q '"link:\|"file:'; then
     echo "  ✗ BAD specifiers in published manifest"; exit 1
   fi
