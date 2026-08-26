@@ -1,0 +1,71 @@
+name: node-plugin
+
+# Reusable CI for every Node plugin package in the Maestro suite.
+# Callers: ddtcorex/<package>/.github/workflows/ci.yml
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js major version
+        type: string
+        default: '22'
+      pnpm-version:
+        description: pnpm major version
+        type: string
+        default: '11'
+      run-build:
+        description: Run `pnpm build` (tsc → lib/)
+        type: boolean
+        default: true
+      run-client-build:
+        description: Run `pnpm run build:client` (esbuild client bundle)
+        type: boolean
+        default: false
+      require-lib-index:
+        description: Fail unless lib/index.js exists after build
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ inputs.pnpm-version }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (tsc)
+        if: ${{ inputs.run-build }}
+        run: pnpm build
+
+      - name: Build client bundle
+        if: ${{ inputs.run-client-build }}
+        run: pnpm run build:client
+
+      - name: Test
+        run: pnpm test
+
+      # Boot-crash contract: a flat lib/index.js must exist or the profile
+      # boot dies with ERR_MODULE_NOT_FOUND before any code runs.
+      - name: Require flat lib/index.js
+        if: ${{ inputs.require-lib-index }}
+        run: test -f lib/index.js
+
+      # Publish-safety contract: the packed manifest must carry real semver
+      # ranges — catches link:/file:/unresolvable workspace: deps sneaking in.
+      - name: Publish dry-run
+        run: pnpm publish --dry-run --access public --no-git-checks

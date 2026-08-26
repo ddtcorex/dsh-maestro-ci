@@ -1,0 +1,32 @@
+name: go-lib
+
+# Reusable CI for Go repos in the Maestro suite (govard).
+
+on:
+  workflow_call:
+    inputs:
+      go-version-file:
+        description: Path to go.mod for version resolution
+        type: string
+        default: go.mod
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ inputs.go-version-file }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: make test
+        run: make test
+
+      - name: make build
+        run: make build
