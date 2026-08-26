@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Publish every @ddtcorex package to npm in dependency order.
-# Publishes from FRESH clones of origin/master|main — never from a shared
-# working checkout (other sessions may hold unpushed local commits).
+# Publishes from FRESH clones of origin/master — never from a shared working
+# checkout (other sessions may hold unpushed local commits).
 #
-# Usage: NPM_TOKEN=... scripts/publish-all.sh [pkg ...]
-#   no args = full ordered batch; args = subset names (config-lib, remote, ...)
+# CRITICAL: lib/ is a build artifact, not committed — every Node package must
+# be installed + built INSIDE its fresh clone before `pnpm publish`, otherwise
+# the tarball ships without code. Packages whose pnpm-workspace.yaml references
+# ../dsh-maestro-config-lib get that sibling cloned+built next to them first,
+# mirroring the CI sibling-ordering rule.
+#
+# Usage: scripts/publish-all.sh [pkg ...]
+#   no args = full ordered batch; args = subset keys
 set -euo pipefail
 
 OWNER="${OWNER:-ddtcorex}"
@@ -21,24 +27,49 @@ declare -A REPO=(
 )
 ORDER=(config-lib remote review notifier config guard observe memory mobile govard-pkg skills meta)
 
+clone() { # $1=repo -> $WORK/$1
+  git clone -q --depth 1 -b master "git@github.com:$OWNER/$1.git" "$WORK/$1"
+}
+
+ensure_config_lib() {
+  [ -f "$WORK/dsh-maestro-config-lib/package.json" ] && return
+  echo "  (staging sibling dsh-maestro-config-lib)"
+  clone dsh-maestro-config-lib
+  (cd "$WORK/dsh-maestro-config-lib" && pnpm install --frozen-lockfile >/dev/null && pnpm run --if-present build >/dev/null)
+}
+
+publish_one() { # $1=key  $2="full"|"patch-only"
+  local key="$1" mode="$2" repo="${REPO[$1]}"
+  echo "=== $repo ($mode) ==="
+  clone "$repo"
+  cd "$WORK/$repo"
+  if [ "$mode" = full ]; then
+    grep -qs 'dsh-maestro-config-lib' pnpm-workspace.yaml && ensure_config_lib
+    pnpm install --frozen-lockfile >/dev/null
+    pnpm run --if-present build >/dev/null
+    pnpm run --if-present build:client >/dev/null
+  fi
+  pnpm publish --access public --no-git-checks
+  local name ver tarball
+  name=$(python3 -c "import json;print(json.load(open('package.json'))['name'])")
+  ver=$(python3 -c "import json;print(json.load(open('package.json'))['version'])")
+  npm view "$name@$ver" version >/dev/null && echo "  ✓ $name@$ver on registry"
+  tarball="$WORK/$name.tgz"
+  npm pack "$name@$ver" --silent --pack-destination "$WORK" >/dev/null
+  if tar -xzOf "$tarball" package/package.json | grep -q '"link:\|"file:'; then
+    echo "  ✗ BAD specifiers in published manifest"; exit 1
+  fi
+  echo "  ✓ manifest specifiers clean"
+}
+
 WANT=("$@")
 [ ${#WANT[@]} -eq 0 ] && WANT=("${ORDER[@]}")
 
 for key in "${WANT[@]}"; do
-  repo="${REPO[$key]}"
-  branch="main"; [ "$repo" != dsh-maestro-ci ] && branch="master"
-  # maestro-skills + dsh-maestro-* all use master; ci uses main (unused here)
-  echo "=== $repo ==="
-  git clone -q --depth 1 -b "$branch" "git@github.com:$OWNER/$repo.git" "$WORK/$repo"
-  (
-    cd "$WORK/$repo"
-    pnpm publish --access public --no-git-checks
-    name=$(python3 -c "import json;print(json.load(open('package.json'))['name'])")
-    ver=$(python3 -c "import json;print(json.load(open('package.json'))['version'])")
-    npm view "$name@$ver" version >/dev/null && echo "  ✓ $name@$ver verified on registry"
-    tarball=$(npm pack --silent "$name@$ver" 2>/dev/null || true)
-    [ -n "$tarball" ] && { tar -tzf "$tarball" >/dev/null; grep -rl '"link:\|"file:' <<<"$(tar -xzOf "$tarball" package/package.json)" && { echo "  ✗ BAD specifiers"; exit 1; } || echo "  ✓ manifest specifiers clean"; rm -f "$tarball"; }
-  )
+  case "$key" in
+    meta)    publish_one "$key" patch-only ;;
+    *)       publish_one "$key" full ;;
+  esac
 done
 echo ""
 echo "ALL DONE: ${WANT[*]}"
