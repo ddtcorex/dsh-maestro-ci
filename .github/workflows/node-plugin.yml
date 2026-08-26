@@ -49,6 +49,10 @@ jobs:
         run: |
           while read -r repo ref target; do
             [ -z "$repo" ] && continue
+            # tolerate legacy "<repo>@<ref>" entries without spaces
+            if [ -z "$ref" ] && [ "${repo#*@}" != "$repo" ]; then
+              ref="${repo##*@}"; repo="${repo%%@*}"
+            fi
             dest="../${target:-$repo}"
             mkdir -p "$(dirname "$dest")"
             git clone --depth 1 --branch "$ref" "https://github.com/ddtcorex/${repo}.git" "$dest"
