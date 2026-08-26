@@ -27,7 +27,7 @@ on:
         type: boolean
         default: true
       sibling-repos:
-        description: Newline-separated "repo@ref" cloned+built under ../ before install
+        description: Lines of "<repo> <ref> [target]" cloned+built under ../ before install
         type: string
         default: ''
 
@@ -47,11 +47,12 @@ jobs:
         env:
           SIBLINGS: ${{ inputs.sibling-repos }}
         run: |
-          while read -r spec; do
-            [ -z "$spec" ] && continue
-            repo="${spec%%@*}"; ref="${spec##*@}"
-            git clone --depth 1 --branch "$ref" "https://github.com/ddtcorex/${repo}.git" "../${repo}"
-            (cd "../${repo}" && corepack enable && pnpm install --frozen-lockfile && pnpm build)
+          while read -r repo ref target; do
+            [ -z "$repo" ] && continue
+            dest="../${target:-$repo}"
+            mkdir -p "$(dirname "$dest")"
+            git clone --depth 1 --branch "$ref" "https://github.com/ddtcorex/${repo}.git" "$dest"
+            (cd "$dest" && corepack enable && pnpm install --frozen-lockfile && pnpm build)
           done <<< "$SIBLINGS"
 
       - uses: pnpm/action-setup@v4
