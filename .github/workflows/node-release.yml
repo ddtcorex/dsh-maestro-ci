@@ -1,0 +1,86 @@
+name: node-release
+
+# Reusable release for every Node plugin package in the Maestro suite.
+# Callers: ddtcorex/<package>/.github/workflows/release.yml (on push tag v*.*.*)
+# Does: checkout tag → pnpm install/build → pnpm publish --access public → GitHub Release
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js major version
+        type: string
+        default: '22'
+      pnpm-version:
+        description: pnpm major version; empty uses packageManager field
+        type: string
+        default: '11'
+      run-build:
+        description: Run `pnpm build` before publish
+        type: boolean
+        default: true
+    secrets:
+      npm-token:
+        description: NPM_TOKEN for pnpm publish
+        required: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        if: inputs.pnpm-version != ''
+        with:
+          version: ${{ inputs.pnpm-version }}
+
+      - uses: pnpm/action-setup@v4
+        if: inputs.pnpm-version == ''
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        if: ${{ inputs.run-build }}
+        run: pnpm build
+
+      - name: Require flat lib/index.js
+        run: test -f lib/index.js
+
+      - name: Publish to npm
+        run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+
+      - name: Extract changelog section
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [ -f CHANGELOG.md ]; then
+            awk -v ver="$version" '
+              /^## \[/ { if (found) exit; if (index($0, "[" ver "]")) { found=1; next } }
+              found { print }
+            ' CHANGELOG.md > release-notes.md || true
+            cat release-notes.md
+          else
+            echo "$GITHUB_REF_NAME" > release-notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          generate_release_notes: true
