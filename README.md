@@ -43,16 +43,6 @@ Special cases:
 - **Client bundle** (`dsh-maestro-mobile`, `dsh-maestro-config`): pass
   `run-client-build: true`.
 
-### go-lib.yml
-
-Go CI (`govard`): setup-go via `go.mod` → `make test` → `make build`.
-
-```yaml
-jobs:
-  verify:
-    uses: ddtcorex/dsh-maestro-ci/.github/workflows/go-lib.yml@main
-```
-
 ## Versioning
 
 Callers currently pin `@main`. Once the workflows stabilize, tighten callers
