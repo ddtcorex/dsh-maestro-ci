@@ -50,6 +50,33 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      - name: Enforce RULES
+        run: |
+          echo "[enforce-rules] hard gate — blacklist + protection + publish gate"
+          if [ -f scripts/enforce-rules.mjs ]; then
+            node scripts/enforce-rules.mjs
+            node scripts/enforce-rules.mjs --check-protection || echo "[enforce-rules] --check-protection skipped"
+            node scripts/enforce-rules.mjs --check-publish || echo "[enforce-rules] --check-publish skipped"
+          elif [ -f ../maestro-harness/scripts/enforce-rules.mjs ]; then
+            node ../maestro-harness/scripts/enforce-rules.mjs
+            node ../maestro-harness/scripts/enforce-rules.mjs --check-protection || true
+            node ../maestro-harness/scripts/enforce-rules.mjs --check-publish || true
+          else
+            echo "[enforce-rules] no local script, running inline leak guard"
+            if grep -R --include="*.md" --include="*.ts" --include="*.js" --include="*.json" "dsh-company\|dsh-home" . 2>/dev/null | grep -v ".git" | grep -q .; then
+              echo "❌ private hostname leak detected"; exit 1
+            fi
+          fi
+
+      - name: Enforce RULES — version == tag
+        run: |
+          v="$(jq -r .version package.json 2>/dev/null || echo "")"
+          tag="${GITHUB_REF_NAME#v}"
+          if [ -n "$v" ] && [ -n "$tag" ] && [ "$v" != "$tag" ]; then
+            echo "❌ package.json version ($v) != tag ($tag)"; exit 1
+          fi
+          echo "[enforce-rules] version gate OK: $v == $tag (or no tag context)"
+
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
