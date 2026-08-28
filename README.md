@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   verify:
-    uses: ddtcorex/dsh-maestro-ci/.github/workflows/node-plugin.yml@main
+    uses: ddtcorex/dsh-maestro-ci/.github/workflows/node-plugin.yml@85d17f85a15c9a5e0a39638eb72925a095625d0e
 ```
 
 Special cases:
@@ -45,5 +45,6 @@ Special cases:
 
 ## Versioning
 
-Callers currently pin `@main`. Once the workflows stabilize, tighten callers
-to a full commit SHA so pipeline changes are reviewed per-repo.
+Callers pin a full commit SHA of `main` (see caller template above). After
+merging a workflow change here, bump the SHA in every caller repo so the
+change is reviewed per-repo. Use `gh api repos/ddtcorex/dsh-maestro-ci/commits/main --jq .sha` to get the current SHA. Never pin `@main` — SHA pinning ensures reproducible, reviewable pipelines per checklist §5.
