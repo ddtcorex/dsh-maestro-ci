@@ -8,7 +8,7 @@ Thank you for contributing to **dsh-maestro-ci** (`ddtcorex/dsh-maestro-ci`) —
 2. This repo is **CI-only** (no `package.json`, no `lib/` build). Workflows live in `.github/workflows/`:
    - `node-plugin.yml` — CI for every Node plugin package (`packages/dsh-maestro-*`, `maestro-skills`, `dsh-maestro-meta`)
    - `node-release.yml` — tag-triggered publish (`pnpm publish --access public` + GitHub Release)
-3. Edit workflows with care — every caller pins a full commit SHA of `main`, so changes here affect all repos on next SHA bump.
+3. Edit workflows with care — every caller pins a full commit SHA of `master`, so changes here affect all repos on next SHA bump.
 4. Local rehearsal before pushing is mandatory:
 
    ```bash
@@ -29,13 +29,13 @@ Do not skip ahead to implementation and do not bundle multiple TDD tasks into on
 
 ## Branch Naming
 
-Never commit directly to `main`. Start a feature branch per work session:
+Never commit directly to `master`. Start a feature branch per work session:
 
 - `fix/<topic>` — bug fixes
 - `feat/<topic>` — new features / new workflows
 - `docs/<topic>` — documentation-only changes
 
-Rebase (not merge) when the base moves: `git fetch origin && git rebase origin/main`.
+Rebase (not merge) when the base moves: `git fetch origin && git rebase origin/master`.
 
 ## Conventional Commits
 
@@ -76,10 +76,10 @@ Do not claim verified/done/clean without having actually run the checks — be r
 
 ## Pull Requests
 
-1. Push your branch and open a PR into `main`.
+1. Push your branch and open a PR into `master`.
 2. Fill out `.github/PULL_REQUEST_TEMPLATE.md` (Summary, Why, Changes, Validation, Linked Issues).
 3. Link the PR to the plan that produced it when the Superpowers workflow was used.
-4. After merging, callers must bump their pinned SHA to the new `main` commit to pick up the fix.
+4. After merging, callers must bump their pinned SHA to the new `master` commit to pick up the fix.
 
 ## Package Visibility
 
