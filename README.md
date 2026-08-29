@@ -45,6 +45,6 @@ Special cases:
 
 ## Versioning
 
-Callers pin a full commit SHA of `main` (see caller template above). After
+Callers pin a full commit SHA of `master` (see caller template above). After
 merging a workflow change here, bump the SHA in every caller repo so the
-change is reviewed per-repo. Use `gh api repos/ddtcorex/dsh-maestro-ci/commits/main --jq .sha` to get the current SHA. Never pin `@main` — SHA pinning ensures reproducible, reviewable pipelines per checklist §5.
+change is reviewed per-repo. Use `gh api repos/ddtcorex/dsh-maestro-ci/commits/master --jq .sha` to get the current SHA. Never pin `@master` — SHA pinning ensures reproducible, reviewable pipelines per checklist §5.
