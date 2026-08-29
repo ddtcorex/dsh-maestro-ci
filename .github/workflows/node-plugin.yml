@@ -74,6 +74,23 @@ jobs:
           node-version: ${{ inputs.node-version }}
           cache: pnpm
 
+      - name: Enforce RULES
+        run: |
+          echo "[enforce-rules] hard gate — blacklist + protection"
+          if [ -f scripts/enforce-rules.mjs ]; then
+            node scripts/enforce-rules.mjs
+            node scripts/enforce-rules.mjs --check-protection || echo "[enforce-rules] --check-protection skipped (no gh auth)"
+          elif [ -f ../maestro-harness/scripts/enforce-rules.mjs ]; then
+            node ../maestro-harness/scripts/enforce-rules.mjs
+            node ../maestro-harness/scripts/enforce-rules.mjs --check-protection || true
+          else
+            echo "[enforce-rules] no local script, running inline leak guard"
+            if grep -R --include="*.md" --include="*.ts" --include="*.js" --include="*.json" "dsh-company\|dsh-home" . 2>/dev/null | grep -v ".git" | grep -q .; then
+              echo "❌ private hostname leak detected"; exit 1
+            fi
+            echo "[enforce-rules] inline guard OK"
+          fi
+
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
