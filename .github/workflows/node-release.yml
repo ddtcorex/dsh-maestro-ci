@@ -19,6 +19,10 @@ on:
         description: Run `pnpm build` before publish
         type: boolean
         default: true
+      sibling-repos:
+        description: Lines of "<repo> <ref> [target]" cloned+built under ../ before install (e.g. "dsh-maestro-config-lib master")
+        type: string
+        default: ''
     secrets:
       npm-token:
         description: NPM_TOKEN for pnpm publish
@@ -76,6 +80,39 @@ jobs:
             echo "❌ package.json version ($v) != tag ($tag)"; exit 1
           fi
           echo "[enforce-rules] version gate OK: $v == $tag (or no tag context)"
+
+      # Cross-package deps use workspace:^ + a ../<pkg> workspace member, which
+      # only resolves when the sibling checkout exists beside this one.
+      # This mirrors the `sibling-repos` handling in node-plugin.yml for CI.
+      - name: Checkout and build sibling repos
+        if: inputs.sibling-repos != ''
+        env:
+          SIBLINGS: ${{ inputs.sibling-repos }}
+        run: |
+          while read -r repo ref target; do
+            [ -z "$repo" ] && continue
+            if [ -z "$ref" ] && [ "${repo#*@}" != "$repo" ]; then
+              ref="${repo##*@}"; repo="${repo%%@*}"
+            fi
+            dest="../${target:-$repo}"
+            mkdir -p "$(dirname "$dest")"
+            git clone --depth 1 --branch "$ref" "https://github.com/ddtcorex/${repo}.git" "$dest"
+            (cd "$dest" && corepack enable && pnpm install --frozen-lockfile && pnpm build)
+          done <<< "$SIBLINGS"
+
+      - name: Auto-clone config-lib for workspace deps (fallback)
+        if: inputs.sibling-repos == ''
+        run: |
+          if grep -q '"@ddtcorex/dsh-maestro-config-lib": "workspace:' package.json 2>/dev/null; then
+            echo "[sibling] workspace dep detected, cloning dsh-maestro-config-lib master"
+            dest="../dsh-maestro-config-lib"
+            if [ ! -d "$dest" ]; then
+              git clone --depth 1 --branch master "https://github.com/ddtcorex/dsh-maestro-config-lib.git" "$dest"
+            fi
+            (cd "$dest" && corepack enable && pnpm install --frozen-lockfile && pnpm build)
+          else
+            echo "[sibling] no workspace config-lib dep, skip"
+          fi
 
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
