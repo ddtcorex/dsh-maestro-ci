@@ -30,7 +30,15 @@ rehearse_one() {
 
   cd "$META_ROOT" || return 1
   local CI_FILE="$REPO_DIR/.github/workflows/ci.yml"
-  if [ ! -f "$CI_FILE" ]; then echo "✗ no ci.yml"; failures=$((failures+1)); return; fi
+  if [ ! -f "$CI_FILE" ]; then
+    # The workflow host itself ships the reusable workflows, not a caller
+    # ci.yml — there is no caller pipeline to rehearse. Skip, do not fail.
+    if [ -f "$REPO_DIR/.github/workflows/node-plugin.yml" ]; then
+      echo "○ no caller ci.yml — workflow host itself, nothing to rehearse (OK)"
+      return
+    fi
+    echo "✗ no ci.yml"; failures=$((failures+1)); return
+  fi
 
   # ---- parse caller inputs ----
   local IN
