@@ -1,0 +1,3 @@
+# Re-include coordination files ignored by the global core.excludesFile
+!AGENTS.md
+!CLAUDE.md
