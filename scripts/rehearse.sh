@@ -85,7 +85,15 @@ PY2
   fi
 
   # ---- sandbox: clone caller branch + siblings in CI-like layout ----
-  local SB; SB=$(mktemp -d /tmp/rehearse.XXXXXX)
+  # Deliberately NOT under /tmp: a caller's own test suite can assert things
+  # about paths relative to the OS temp dir (e.g. "a relative path escapes
+  # the session cwd into tmpdir"), and those assertions break when the suite
+  # itself runs from inside /tmp — a real GitHub Actions runner never does
+  # (it works from /home/runner/work/...), so this mirrors that instead of
+  # diverging from it.
+  local SANDBOX_ROOT="${REHEARSE_SANDBOX_ROOT:-$HOME/.cache/dsh-maestro-ci-rehearse}"
+  mkdir -p "$SANDBOX_ROOT"
+  local SB; SB=$(mktemp -d "$SANDBOX_ROOT/rehearse.XXXXXX")
   trap 'rm -rf "$SB"' RETURN
   local BR; BR=$(git -C "$REPO_DIR" branch --show-current)
   git clone -q --no-hardlinks --branch "$BR" "$REPO_DIR" "$SB/repo" || { echo "✗ clone caller"; failures=$((failures+1)); return; }
