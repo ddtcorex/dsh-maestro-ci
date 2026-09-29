@@ -8,9 +8,9 @@ here once and every repo picks it up on its next run.
 
 ### node-plugin.yml
 
-CI for every Node plugin package (`packages/dsh-maestro-*`, `maestro-skills`,
-`dsh-maestro-meta`). Steps: frozen-lockfile install → build → optional client
-bundle → test → flat-`lib/index.js` contract → publish dry-run.
+CI for every Node plugin package (`packages/dsh-maestro-*`, `maestro-skills`).
+Steps: frozen-lockfile install → build → optional client bundle → test →
+flat-`lib/index.js` contract → publish dry-run.
 
 Inputs (all optional): `node-version` (22), `pnpm-version` (11),
 `run-build` (true), `run-client-build` (false), `require-lib-index` (true).
@@ -38,8 +38,8 @@ jobs:
 
 Special cases:
 
-- **Patch-only bundle** (`dsh-maestro-meta`, no lib): pass
-  `run-build: false` and `require-lib-index: false`.
+- **Patch-only bundle** (no `lib/`): pass `run-build: false` and
+  `require-lib-index: false`.
 - **Client bundle** (`dsh-maestro-mobile`, `dsh-maestro-config`): pass
   `run-client-build: true`.
 

@@ -6,7 +6,7 @@ Thank you for contributing to **dsh-maestro-ci** (`ddtcorex/dsh-maestro-ci`) —
 
 1. **Fork and clone** `github.com/ddtcorex/dsh-maestro-ci`.
 2. This repo is **CI-only** (no `package.json`, no `lib/` build). Workflows live in `.github/workflows/`:
-   - `node-plugin.yml` — CI for every Node plugin package (`packages/dsh-maestro-*`, `maestro-skills`, `dsh-maestro-meta`)
+   - `node-plugin.yml` — CI for every Node plugin package (`packages/dsh-maestro-*`, `maestro-skills`)
    - `node-release.yml` — tag-triggered publish (`pnpm publish --access public` + GitHub Release)
 3. Edit workflows with care — every caller pins a full commit SHA of `master`, so changes here affect all repos on next SHA bump.
 4. Local rehearsal before pushing is mandatory:
@@ -69,7 +69,7 @@ bash -n scripts/publish-all.sh
 
 # Rehearse against a real caller (catches frozen-lockfile, sibling ordering, pnpm version)
 ./scripts/rehearse.sh <workspace-root>/packages/dsh-maestro-memory
-./scripts/rehearse.sh <workspace-root>/dsh-maestro-meta
+./scripts/rehearse.sh <workspace-root>/packages/dsh-maestro-config
 ```
 
 Do not claim verified/done/clean without having actually run the checks — be ready to paste exact command output in the PR.

@@ -23,9 +23,9 @@ declare -A REPO=(
   [notifier]=dsh-maestro-notifier     [guard]=dsh-maestro-guard
   [observe]=dsh-maestro-observe       [memory]=dsh-maestro-memory
   [mobile]=dsh-maestro-mobile         [govard-pkg]=dsh-maestro-govard
-  [meta]=dsh-maestro-meta             [skills]=maestro-skills
+  [skills]=maestro-skills
 )
-ORDER=(config-lib remote review notifier config guard observe memory mobile govard-pkg skills meta)
+ORDER=(config-lib remote review notifier config guard observe memory mobile govard-pkg skills)
 
 clone() { # $1=repo -> $WORK/$1
   git clone -q --depth 1 -b master "git@github.com:$OWNER/$1.git" "$WORK/$1"
@@ -67,10 +67,7 @@ WANT=("$@")
 [ ${#WANT[@]} -eq 0 ] && WANT=("${ORDER[@]}")
 
 for key in "${WANT[@]}"; do
-  case "$key" in
-    meta)    publish_one "$key" patch-only ;;
-    *)       publish_one "$key" full ;;
-  esac
+  publish_one "$key" full
 done
 echo ""
 echo "ALL DONE: ${WANT[*]}"
