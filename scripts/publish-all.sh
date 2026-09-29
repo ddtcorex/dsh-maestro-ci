@@ -38,17 +38,15 @@ ensure_config_lib() {
   (cd "$WORK/dsh-maestro-config-lib" && pnpm install --frozen-lockfile >/dev/null && pnpm run --if-present build >/dev/null)
 }
 
-publish_one() { # $1=key  $2="full"|"patch-only"
-  local key="$1" mode="$2" repo="${REPO[$1]}"
-  echo "=== $repo ($mode) ==="
+publish_one() { # $1=key
+  local repo="${REPO[$1]}"
+  echo "=== $repo ==="
   clone "$repo"
   cd "$WORK/$repo"
-  if [ "$mode" = full ]; then
-    grep -qs 'dsh-maestro-config-lib' pnpm-workspace.yaml && ensure_config_lib
-    pnpm install --frozen-lockfile >/dev/null
-    pnpm run --if-present build >/dev/null
-    pnpm run --if-present build:client >/dev/null
-  fi
+  grep -qs 'dsh-maestro-config-lib' pnpm-workspace.yaml && ensure_config_lib
+  pnpm install --frozen-lockfile >/dev/null
+  pnpm run --if-present build >/dev/null
+  pnpm run --if-present build:client >/dev/null
   pnpm publish --access public --no-git-checks
   local name ver tarball
   name=$(python3 -c "import json;print(json.load(open('package.json'))['name'])")
@@ -67,7 +65,7 @@ WANT=("$@")
 [ ${#WANT[@]} -eq 0 ] && WANT=("${ORDER[@]}")
 
 for key in "${WANT[@]}"; do
-  publish_one "$key" full
+  publish_one "$key"
 done
 echo ""
 echo "ALL DONE: ${WANT[*]}"
